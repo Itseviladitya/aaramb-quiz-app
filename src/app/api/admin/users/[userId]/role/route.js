@@ -5,11 +5,17 @@ const adminService = adminServiceModule.default || adminServiceModule;
 
 export async function PATCH(request, { params }) {
   try {
-    const { quizId } = await params;
+    const { userId } = await params;
     await requireAdminUser();
     const body = await request.json();
-    const quiz = await adminService.setQuizStatus(quizId, body.status);
-    return Response.json({ quiz });
+    const role = String(body.role || "").trim().toLowerCase();
+
+    if (!role) {
+      return Response.json({ message: "role is required" }, { status: 400 });
+    }
+
+    const user = await adminService.setUserRole(userId, role);
+    return Response.json({ user });
   } catch (error) {
     return apiErrorResponse(error);
   }

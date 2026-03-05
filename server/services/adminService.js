@@ -69,6 +69,25 @@ async function disqualifyUserFromQuiz(userId, quizId) {
   ).lean();
 }
 
+async function setUserRole(userId, role) {
+  const allowedRoles = ["user", "manager", "admin"];
+  if (!allowedRoles.includes(role)) {
+    throw Object.assign(new Error("Invalid role"), { status: 400 });
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { role },
+    { returnDocument: "after" }
+  ).lean();
+
+  if (!user) {
+    throw Object.assign(new Error("User not found"), { status: 404 });
+  }
+
+  return user;
+}
+
 async function createQuiz(payload, adminUserId) {
   if (!payload.startsAt || !payload.endsAt) {
     throw Object.assign(new Error("Quiz start and end date/time are required"), { status: 400 });
@@ -277,6 +296,7 @@ module.exports = {
   deleteUser,
   banUser,
   disqualifyUserFromQuiz,
+  setUserRole,
   createQuiz,
   updateQuiz,
   setQuizStatus,

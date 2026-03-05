@@ -9,14 +9,17 @@ export default function AdminUsersTab({
     users,
     quizzes,
     canDeleteUser,
+    canManageRoles,
     disqualifyQuizIdByUser,
     setDisqualifyQuizIdByUser,
     onBan,
+    onSetRole,
     onDisqualify,
     onDeleteUser
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filter, setFilter] = useState("all"); // 'all', 'active', 'banned'
+    const [roleSelectionByUser, setRoleSelectionByUser] = useState({});
 
     const filteredUsers = useMemo(() => {
         return users.filter(user => {
@@ -93,6 +96,33 @@ export default function AdminUsersTab({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
+                                    {canManageRoles && (
+                                        <>
+                                            <select
+                                                className={`${selectClass} !py-2 text-xs`}
+                                                value={roleSelectionByUser[user._id] ?? user.role ?? "user"}
+                                                onChange={(e) =>
+                                                    setRoleSelectionByUser((current) => ({
+                                                        ...current,
+                                                        [user._id]: e.target.value,
+                                                    }))
+                                                }
+                                            >
+                                                <option value="user">User</option>
+                                                <option value="manager">Manager</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => onSetRole(user._id, roleSelectionByUser[user._id] ?? user.role ?? "user")}
+                                                className={btnOutline}
+                                            >
+                                                Set Role
+                                            </button>
+                                        </>
+                                    )}
+
                                     <button
                                         type="button"
                                         onClick={() => onBan(user._id, !user.isBanned)}

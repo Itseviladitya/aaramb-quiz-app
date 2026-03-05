@@ -13,6 +13,7 @@ import {
   fetchAdminResults,
   fetchAdminStats,
   fetchAdminUsers,
+  setUserRole,
   setUserBan,
   updateQuiz,
   updateQuizStatus,
@@ -71,6 +72,8 @@ export default function AdminDashboard() {
   const isAdmin = session?.user?.role === "admin";
   const canCreateQuiz = isAdmin;
   const canDeleteUser = isAdmin;
+  const canManageQuiz = isAdmin;
+  const canManageRoles = isAdmin;
 
   async function loadAll() {
     try {
@@ -141,6 +144,10 @@ export default function AdminDashboard() {
 
   async function onSetStatus(quiz, status) {
     try {
+      if (!canManageQuiz) {
+        setError("Manager role is not allowed to edit quiz status");
+        return;
+      }
       await updateQuizStatus(quiz._id, status);
       await loadAll();
     } catch (err) {
@@ -151,6 +158,10 @@ export default function AdminDashboard() {
   async function onDeleteQuiz(quizId) {
     if (!window.confirm("Are you sure you want to delete this quiz completely?")) return;
     try {
+      if (!canManageQuiz) {
+        setError("Manager role is not allowed to delete quizzes");
+        return;
+      }
       await deleteQuiz(quizId);
       await loadAll();
     } catch (err) {
@@ -160,6 +171,10 @@ export default function AdminDashboard() {
 
   async function onEditQuiz(quizId) {
     try {
+      if (!canManageQuiz) {
+        setError("Manager role is not allowed to edit quizzes");
+        return;
+      }
       const detail = await fetchAdminQuizDetail(quizId);
       const quiz = detail.quiz;
       setEditingQuizId(quiz._id);
@@ -223,6 +238,19 @@ export default function AdminDashboard() {
     }
   }
 
+  async function onSetRole(userId, role) {
+    try {
+      if (!canManageRoles) {
+        setError("Only admin can change user roles");
+        return;
+      }
+      await setUserRole(userId, role);
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Unable to update user role");
+    }
+  }
+
   async function handleUnlockAttempt(attemptId) {
     try {
       await unlockAttempt(attemptId);
@@ -260,6 +288,9 @@ export default function AdminDashboard() {
             <h1 className="mt-1 text-2xl font-extrabold text-white md:text-3xl">
               Aarambh Quiz Administration
             </h1>
+            <div className="mt-2 inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-300">
+              Role: {session?.user?.role || "user"}
+            </div>
             <p className="mt-2 text-sm text-slate-400 max-w-lg">
               Manage robust configurations, oversee active users, and manually review/forgive proctoring violations.
             </p>
@@ -307,6 +338,7 @@ export default function AdminDashboard() {
         <AdminQuizzesTab
           quizzes={quizzes}
           canCreateQuiz={canCreateQuiz}
+          canManageQuiz={canManageQuiz}
           form={form}
           setForm={setForm}
           questionJson={questionJson}
@@ -325,9 +357,11 @@ export default function AdminDashboard() {
           users={users}
           quizzes={quizzes}
           canDeleteUser={canDeleteUser}
+          canManageRoles={canManageRoles}
           disqualifyQuizIdByUser={disqualifyQuizIdByUser}
           setDisqualifyQuizIdByUser={setDisqualifyQuizIdByUser}
           onBan={onBan}
+          onSetRole={onSetRole}
           onDisqualify={onDisqualify}
           onDeleteUser={onDeleteUser}
         />

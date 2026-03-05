@@ -29,6 +29,13 @@ export function disqualifyUser(userId, quizId) {
   });
 }
 
+export function setUserRole(userId, role) {
+  return apiRequest(`/admin/users/${userId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
 export function fetchAdminQuizzes() {
   return apiRequest("/admin/quizzes");
 }

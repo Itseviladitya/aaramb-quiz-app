@@ -9,6 +9,7 @@ const btnDanger = "inline-flex cursor-pointer items-center gap-1.5 rounded-xl bo
 export default function AdminQuizzesTab({
     quizzes,
     canCreateQuiz,
+    canManageQuiz,
     form,
     setForm,
     questionJson,
@@ -42,7 +43,7 @@ export default function AdminQuizzesTab({
 
             {!canCreateQuiz && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
-                    Manager role can edit and publish existing quizzes, but cannot create new quizzes.
+                    Manager role can view quizzes only. Creating, editing, publishing, and deleting quizzes are admin only.
                 </div>
             )}
 
@@ -257,22 +258,26 @@ export default function AdminQuizzesTab({
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                    <button type="button" onClick={() => {
-                                        onEditQuiz(quiz._id);
-                                        setShowForm(true);
-                                    }} className={btnOutline}>
-                                        <FiEdit2 className="h-3.5 w-3.5" /> Edit
-                                    </button>
-                                    <button type="button" onClick={() => onSetStatus(quiz, quiz.status === "published" ? "draft" : "published")} className={btnOutline}>
-                                        {quiz.status === "published" ? (
-                                            <><FiPauseCircle className="h-3.5 w-3.5 text-amber-400" /> Unpublish</>
-                                        ) : (
-                                            <><FiPlayCircle className="h-3.5 w-3.5 text-emerald-400" /> Publish</>
-                                        )}
-                                    </button>
-                                    <button type="button" onClick={() => onDeleteQuiz(quiz._id)} className={btnDanger}>
-                                        <FiTrash2 className="h-3.5 w-3.5" /> Delete
-                                    </button>
+                                    {canManageQuiz && (
+                                        <>
+                                            <button type="button" onClick={() => {
+                                                onEditQuiz(quiz._id);
+                                                setShowForm(true);
+                                            }} className={btnOutline}>
+                                                <FiEdit2 className="h-3.5 w-3.5" /> Edit
+                                            </button>
+                                            <button type="button" onClick={() => onSetStatus(quiz, quiz.status === "published" ? "draft" : "published")} className={btnOutline}>
+                                                {quiz.status === "published" ? (
+                                                    <><FiPauseCircle className="h-3.5 w-3.5 text-amber-400" /> Unpublish</>
+                                                ) : (
+                                                    <><FiPlayCircle className="h-3.5 w-3.5 text-emerald-400" /> Publish</>
+                                                )}
+                                            </button>
+                                            <button type="button" onClick={() => onDeleteQuiz(quiz._id)} className={btnDanger}>
+                                                <FiTrash2 className="h-3.5 w-3.5" /> Delete
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}

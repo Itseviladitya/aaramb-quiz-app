@@ -1,4 +1,4 @@
-import { requireAdminOrManagerUser, apiErrorResponse } from "@/lib/apiAuth";
+import { requireAdminOrManagerUser, requireAdminUser, apiErrorResponse } from "@/lib/apiAuth";
 import adminServiceModule from "../../../../../../server/services/adminService";
 
 const adminService = adminServiceModule.default || adminServiceModule;
@@ -17,7 +17,7 @@ export async function GET(_request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const { quizId } = await params;
-    await requireAdminOrManagerUser();
+    await requireAdminUser();
     const body = await request.json();
     const quiz = await adminService.updateQuiz(quizId, body);
     return Response.json({ quiz });
@@ -29,7 +29,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(_request, { params }) {
   try {
     const { quizId } = await params;
-    await requireAdminOrManagerUser();
+    await requireAdminUser();
     await adminService.deleteQuiz(quizId);
     return new Response(null, { status: 204 });
   } catch (error) {
