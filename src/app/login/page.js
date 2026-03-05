@@ -21,10 +21,7 @@ function normalizeCallbackUrl(value) {
 
   try {
     const callback = new URL(candidate);
-    const appUrl = process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL) : null;
-    if (appUrl && callback.origin === appUrl.origin) {
-      return `${callback.pathname}${callback.search}${callback.hash}`;
-    }
+    return `${callback.pathname}${callback.search}${callback.hash}`;
   } catch {
     // fall through to default
   }

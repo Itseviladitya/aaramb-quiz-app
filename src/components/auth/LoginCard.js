@@ -23,9 +23,7 @@ function normalizeCallbackUrl(value) {
 
   try {
     const callback = new URL(candidate);
-    if (typeof window !== "undefined" && callback.origin === window.location.origin) {
-      return `${callback.pathname}${callback.search}${callback.hash}`;
-    }
+    return `${callback.pathname}${callback.search}${callback.hash}`;
   } catch {
     // ignore parse errors and fallback
   }
