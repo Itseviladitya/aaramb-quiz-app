@@ -1,11 +1,11 @@
-import { requireAdminUser, apiErrorResponse } from "@/lib/apiAuth";
+import { requireAdminOrManagerUser, requireAdminUser, apiErrorResponse } from "@/lib/apiAuth";
 import adminServiceModule from "../../../../../server/services/adminService";
 
 const adminService = adminServiceModule.default || adminServiceModule;
 
 export async function GET() {
   try {
-    await requireAdminUser();
+    await requireAdminOrManagerUser();
     const quizzes = await adminService.listQuizzesForAdmin();
     return Response.json({ quizzes });
   } catch (error) {

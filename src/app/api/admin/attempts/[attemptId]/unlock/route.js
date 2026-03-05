@@ -1,9 +1,9 @@
-import { requireAdminUser, apiErrorResponse } from "@/lib/apiAuth";
+import { requireAdminOrManagerUser, apiErrorResponse } from "@/lib/apiAuth";
 import Attempt from "../../../../../../../server/models/Attempt";
 
 export async function PATCH(_request, { params }) {
     try {
-        await requireAdminUser();
+        await requireAdminOrManagerUser();
         const { attemptId } = await params;
 
         const attempt = await Attempt.findById(attemptId);

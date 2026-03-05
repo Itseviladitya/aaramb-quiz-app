@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
+import { connectMongoose } from "@/lib/mongoose";
 import { logUserActivity } from "../../../../../../../server/services/quizService";
 import { requireUser } from "@/lib/apiAuth";
 
@@ -16,10 +16,10 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Action and message required" }, { status: 400 });
         }
 
-        await connectDB();
+        await connectMongoose();
 
         // Pass the user ID so the service can verify ownership
-        await logUserActivity({ attemptId, userId: user.userId, action, message });
+        await logUserActivity({ attemptId, userId: user._id, action, message });
 
         return NextResponse.json({ success: true });
     } catch (error) {

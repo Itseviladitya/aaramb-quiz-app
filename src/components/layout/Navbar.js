@@ -54,7 +54,7 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              {session.user.role === "admin" && (
+              {["admin", "manager"].includes(session.user.role) && (
                 <Link
                   href="/admin"
                   className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-amber-400 transition-colors hover:bg-amber-500/10 hover:text-amber-300"
@@ -113,7 +113,7 @@ export default function Navbar() {
                     {link.label}
                   </Link>
                 ))}
-                {session.user.role === "admin" && (
+                {["admin", "manager"].includes(session.user.role) && (
                   <Link
                     href="/admin"
                     onClick={() => setMobileOpen(false)}

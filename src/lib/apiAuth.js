@@ -32,6 +32,16 @@ export async function requireAdminUser() {
   return user;
 }
 
+export async function requireAdminOrManagerUser() {
+  const user = await requireUser();
+  if (!["admin", "manager"].includes(user.role)) {
+    const error = new Error("Admin or manager access required");
+    error.status = 403;
+    throw error;
+  }
+  return user;
+}
+
 export function apiErrorResponse(error) {
   const status = error.status || 500;
   return Response.json({ message: error.message || "Unexpected server error" }, { status });

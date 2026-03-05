@@ -30,7 +30,7 @@ export default function LandingFooter() {
                             <FiCode className="w-4 h-4 text-cyan-400" />
                             <span>Crafted by</span>
                             <span className="font-bold text-white">Aditya Gupta</span>
-                            <span className="text-slate-500">(Dev Aditya)</span>
+                            <span className="text-slate-500"><a href="http://www.devaditya.dev" target="_blank">Portfolio</a></span>
                         </div>
                         <p className="text-xs text-slate-500">
                             Member of Aarambh Club, Ramgarh Engineering College
@@ -39,7 +39,7 @@ export default function LandingFooter() {
 
                     {/* Bottom text */}
                     <p className="text-xs text-slate-600 flex items-center gap-1">
-                        Built with <FiHeart className="w-3 h-3 text-rose-400" /> for the students of REC
+                        Built with <FiHeart className="w-3 h-3 text-rose-400" /> for the students of REC by aditya gupta.
                     </p>
                 </div>
             </div>

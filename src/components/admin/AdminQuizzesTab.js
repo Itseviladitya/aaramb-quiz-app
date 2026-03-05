@@ -8,6 +8,7 @@ const btnDanger = "inline-flex cursor-pointer items-center gap-1.5 rounded-xl bo
 
 export default function AdminQuizzesTab({
     quizzes,
+    canCreateQuiz,
     form,
     setForm,
     questionJson,
@@ -28,7 +29,7 @@ export default function AdminQuizzesTab({
                     <FiFileText className="h-6 w-6 text-cyan-400" />
                     Quiz Library
                 </h2>
-                {!showForm && !editingQuizId && (
+                {canCreateQuiz && !showForm && !editingQuizId && (
                     <button
                         onClick={() => setShowForm(true)}
                         className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/30"
@@ -38,6 +39,12 @@ export default function AdminQuizzesTab({
                     </button>
                 )}
             </div>
+
+            {!canCreateQuiz && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">
+                    Manager role can edit and publish existing quizzes, but cannot create new quizzes.
+                </div>
+            )}
 
             {(showForm || editingQuizId) && (
                 <section className="rounded-2xl border border-slate-700/50 bg-slate-800/60 p-6 md:p-8 shadow-sm">

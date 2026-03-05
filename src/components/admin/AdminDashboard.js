@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { FiAlertTriangle, FiXCircle } from "react-icons/fi";
 import {
   createQuiz,
@@ -54,6 +55,7 @@ function toLocalInputValue(value) {
 }
 
 export default function AdminDashboard() {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("overview"); // overview, quizzes, users, results
 
   const [stats, setStats] = useState(null);
@@ -65,6 +67,10 @@ export default function AdminDashboard() {
   const [disqualifyQuizIdByUser, setDisqualifyQuizIdByUser] = useState({});
   const [editingQuizId, setEditingQuizId] = useState("");
   const [error, setError] = useState("");
+
+  const isAdmin = session?.user?.role === "admin";
+  const canCreateQuiz = isAdmin;
+  const canDeleteUser = isAdmin;
 
   async function loadAll() {
     try {
@@ -92,6 +98,10 @@ export default function AdminDashboard() {
   async function onCreateQuiz(event) {
     event.preventDefault();
     try {
+      if (!canCreateQuiz) {
+        setError("Manager role is not allowed to create quizzes");
+        return;
+      }
       if (!form.startsAt || !form.endsAt) {
         setError("Quiz start and end date/time are required");
         return;
@@ -188,6 +198,10 @@ export default function AdminDashboard() {
   async function onDeleteUser(userId) {
     if (!window.confirm("Delete this user?")) return;
     try {
+      if (!canDeleteUser) {
+        setError("Manager role is not allowed to delete users");
+        return;
+      }
       await deleteUser(userId);
       await loadAll();
     } catch (err) {
@@ -292,6 +306,7 @@ export default function AdminDashboard() {
       {activeTab === "quizzes" && (
         <AdminQuizzesTab
           quizzes={quizzes}
+          canCreateQuiz={canCreateQuiz}
           form={form}
           setForm={setForm}
           questionJson={questionJson}
@@ -309,6 +324,7 @@ export default function AdminDashboard() {
         <AdminUsersTab
           users={users}
           quizzes={quizzes}
+          canDeleteUser={canDeleteUser}
           disqualifyQuizIdByUser={disqualifyQuizIdByUser}
           setDisqualifyQuizIdByUser={setDisqualifyQuizIdByUser}
           onBan={onBan}
