@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.replace("/");
+      router.replace("/dashboard");
     }
   }, [status, router]);
 
@@ -33,7 +33,7 @@ export default function LoginPage() {
       ) : null}
       <button
         type="button"
-        onClick={() => signIn("github", { callbackUrl: "/" })}
+        onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md bg-zinc-900 px-4 py-3 font-medium text-white transition hover:bg-zinc-800"
       >
         <FiGithub /> Continue with GitHub

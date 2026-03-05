@@ -29,6 +29,30 @@ const emptyForm = {
   questions: [],
 };
 
+function toIsoOrEmpty(value) {
+  if (!value) {
+    return "";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return parsed.toISOString();
+}
+
+function toLocalInputValue(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
@@ -83,8 +107,8 @@ export default function AdminDashboard() {
         quizTimeLimitSec: 3600,
         perQuestionTimeLimitSec: form.usePerQuestionTimer ? Number(form.perQuestionTimeLimitSec || 30) : 30,
         questionsPerAttempt: Number(form.questionsPerAttempt || 20),
-        startsAt: form.startsAt,
-        endsAt: form.endsAt,
+        startsAt: toIsoOrEmpty(form.startsAt),
+        endsAt: toIsoOrEmpty(form.endsAt),
         questions: parsedQuestions,
       };
 
@@ -131,8 +155,8 @@ export default function AdminDashboard() {
         description: quiz.description || "",
         status: quiz.status || "draft",
         usePerQuestionTimer: quiz.timerMode !== "quiz",
-        startsAt: quiz.startsAt ? new Date(quiz.startsAt).toISOString().slice(0, 16) : "",
-        endsAt: quiz.endsAt ? new Date(quiz.endsAt).toISOString().slice(0, 16) : "",
+        startsAt: toLocalInputValue(quiz.startsAt),
+        endsAt: toLocalInputValue(quiz.endsAt),
         perQuestionTimeLimitSec: quiz.perQuestionTimeLimitSec || 30,
         questionsPerAttempt: quiz.questionsPerAttempt || 20,
       });

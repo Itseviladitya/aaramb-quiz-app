@@ -31,6 +31,7 @@ export const authOptions = {
             email: session.user.email,
             name: session.user.name || "",
             image: session.user.image || "",
+            fullName: session.user.name || "",
             role: "user",
             isBanned: false,
           },
@@ -39,6 +40,12 @@ export const authOptions = {
       ).lean();
       session.user.role = existing?.role || "user";
       session.user.isBanned = Boolean(existing?.isBanned);
+      session.user.profileCompleted = Boolean(existing?.profileCompleted);
+      session.user.fullName = existing?.fullName || session.user.name || "";
+      session.user.branch = existing?.branch || "";
+      session.user.yearOfStudy = existing?.yearOfStudy || null;
+      session.user.studentId = existing?.studentId || "";
+      session.user.phoneNumber = existing?.phoneNumber || "";
       return session;
     },
     async signIn({ user }) {

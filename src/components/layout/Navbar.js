@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signIn, signOut, useSession } from "next-auth/react";
-import { FiAward, FiHome, FiLogIn, FiLogOut, FiSettings } from "react-icons/fi";
+import { FiAward, FiHome, FiLogIn, FiLogOut, FiSettings, FiUser } from "react-icons/fi";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -11,11 +11,17 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
-          <FiHome /> Quiz Platform
+          <FiHome /> Aarambh Quiz
         </Link>
         <div className="flex items-center gap-2 text-sm text-zinc-800">
           {session ? (
             <>
+              <Link href="/dashboard" className="inline-flex items-center gap-1 rounded-md px-3 py-2 font-medium transition hover:bg-zinc-100">
+                <FiHome /> Dashboard
+              </Link>
+              <Link href="/profile" className="inline-flex items-center gap-1 rounded-md px-3 py-2 font-medium transition hover:bg-zinc-100">
+                <FiUser /> Profile
+              </Link>
               <Link href="/leaderboard" className="inline-flex items-center gap-1 rounded-md px-3 py-2 font-medium transition hover:bg-zinc-100">
                 <FiAward /> Leaderboard
               </Link>
