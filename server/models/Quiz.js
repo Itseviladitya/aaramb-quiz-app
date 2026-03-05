@@ -6,7 +6,7 @@ const quizSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     status: {
       type: String,
-      enum: ["draft", "running", "paused"],
+      enum: ["draft", "published"],
       default: "draft",
       index: true,
     },
@@ -18,6 +18,7 @@ const quizSchema = new mongoose.Schema(
     },
     questionsPerAttempt: { type: Number, default: 20, min: 1 },
     totalQuestionPool: { type: Number, default: 0 },
+    proctoringLimit: { type: Number, default: 3, min: 1 },
     timerMode: {
       type: String,
       enum: ["quiz", "question", "mixed"],

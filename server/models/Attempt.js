@@ -45,6 +45,7 @@ const attemptSchema = new mongoose.Schema(
     totalScore: { type: Number, default: 0 },
     warnings: { type: Number, default: 0 },
     disqualifyReason: { type: String, default: "" },
+    isLocked: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

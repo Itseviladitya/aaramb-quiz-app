@@ -21,9 +21,8 @@ function isQuizWithinSchedule(quiz, now = new Date()) {
 async function listAvailableQuizzes() {
   const now = new Date();
   return Quiz.find({
-    status: "running",
-    $or: [{ startsAt: null }, { startsAt: { $lte: now } }],
-    $and: [{ $or: [{ endsAt: null }, { endsAt: { $gte: now } }] }],
+    status: "published",
+    $or: [{ startsAt: null }, { startsAt: { $lte: now }, endsAt: { $gte: now } }],
   })
     .select("title description timerMode startsAt endsAt quizTimeLimitSec perQuestionTimeLimitSec questionsPerAttempt")
     .sort({ createdAt: -1 })
@@ -41,12 +40,15 @@ async function startAttempt({ userId, quizId }) {
   }
 
   const quiz = await Quiz.findById(quizId).lean();
-  if (!quiz || quiz.status !== "running" || !isQuizWithinSchedule(quiz)) {
+  if (!quiz || quiz.status !== "published" || !isQuizWithinSchedule(quiz)) {
     throw Object.assign(new Error("Quiz is not available right now"), { status: 400 });
   }
 
   const existing = await Attempt.findOne({ userId, quizId, status: "in_progress" }).lean();
   if (existing) {
+    if (existing.isLocked) {
+      throw Object.assign(new Error("Your attempt has been locked. Please contact the administrator."), { status: 403 });
+    }
     return existing;
   }
 
@@ -78,10 +80,14 @@ async function getCurrentQuestion({ userId, attemptId }) {
     throw Object.assign(new Error("Attempt is not active"), { status: 400 });
   }
 
+  if (attempt.isLocked) {
+    throw Object.assign(new Error("Your attempt has been locked. Please contact the administrator."), { status: 403 });
+  }
+
   const quiz = await Quiz.findById(attempt.quizId).lean();
-  if (!quiz || quiz.status !== "running" || !isQuizWithinSchedule(quiz)) {
+  if (!quiz || quiz.status !== "published" || !isQuizWithinSchedule(quiz)) {
     await Attempt.findByIdAndUpdate(attempt._id, { status: "expired" });
-    throw Object.assign(new Error("Quiz is paused, not started yet, or ended"), { status: 409 });
+    throw Object.assign(new Error("Quiz is not available, not started yet, or ended"), { status: 409 });
   }
 
   if (attempt.currentQuestionIndex >= attempt.assignedQuestionIds.length) {
@@ -115,6 +121,8 @@ async function getCurrentQuestion({ userId, attemptId }) {
     },
     quizTimeLimitSec: quiz.quizTimeLimitSec,
     timerMode: quiz.timerMode,
+    limitWarnings: quiz.proctoringLimit || 3,
+    isLocked: attempt.isLocked || false,
   };
 }
 
@@ -125,11 +133,15 @@ async function submitAnswer({ userId, attemptId, questionId, selectedOptionKey, 
     throw Object.assign(new Error("Active attempt not found"), { status: 404 });
   }
 
+  if (attempt.isLocked) {
+    throw Object.assign(new Error("Your attempt has been locked. Please contact the administrator."), { status: 403 });
+  }
+
   const quiz = await Quiz.findById(attempt.quizId).lean();
-  if (!quiz || quiz.status !== "running" || !isQuizWithinSchedule(quiz, now)) {
+  if (!quiz || quiz.status !== "published" || !isQuizWithinSchedule(quiz, now)) {
     attempt.status = "expired";
     await attempt.save();
-    throw Object.assign(new Error("Quiz is paused, not started yet, or ended"), { status: 409 });
+    throw Object.assign(new Error("Quiz is not available, not started yet, or ended"), { status: 409 });
   }
 
   if (attempt.currentQuestionIndex >= attempt.assignedQuestionIds.length) {
@@ -211,15 +223,28 @@ async function submitAnswer({ userId, attemptId, questionId, selectedOptionKey, 
 
 async function reportProctorViolation({ userId, attemptId, reason }) {
   const attempt = await Attempt.findOne({ _id: attemptId, userId });
-  if (!attempt || attempt.status !== "in_progress") {
+  if (!attempt || attempt.status !== "in_progress" || attempt.isLocked) {
     return;
   }
 
+  const quiz = await Quiz.findById(attempt.quizId).lean();
+  const limit = quiz?.proctoringLimit || 3;
+
   attempt.warnings += 1;
-  if (attempt.warnings >= 3) {
+  if (attempt.warnings >= limit) {
     attempt.status = "disqualified";
+    attempt.isLocked = true;
     attempt.disqualifyReason = reason || "Multiple proctoring violations";
   }
+  await attempt.save();
+}
+
+async function lockAttempt({ userId, attemptId }) {
+  const attempt = await Attempt.findOne({ _id: attemptId, userId });
+  if (!attempt || attempt.status !== "in_progress") {
+    return;
+  }
+  attempt.isLocked = true;
   await attempt.save();
 }
 
@@ -229,4 +254,5 @@ module.exports = {
   getCurrentQuestion,
   submitAnswer,
   reportProctorViolation,
+  lockAttempt,
 };

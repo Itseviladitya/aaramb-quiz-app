@@ -178,7 +178,7 @@ async function deleteQuiz(quizId) {
 }
 
 async function setQuizStatus(quizId, status) {
-  if (!["draft", "running", "paused"].includes(status)) {
+  if (!["draft", "published"].includes(status)) {
     throw Object.assign(new Error("Invalid status"), { status: 400 });
   }
 

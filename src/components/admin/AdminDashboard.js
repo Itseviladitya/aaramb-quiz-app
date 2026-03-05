@@ -34,6 +34,8 @@ import {
   setUserBan,
   updateQuiz,
   updateQuizStatus,
+  unlockAttempt,
+  resetAttempt,
 } from "@/services/adminService";
 
 const emptyForm = {
@@ -45,6 +47,7 @@ const emptyForm = {
   endsAt: "",
   perQuestionTimeLimitSec: 30,
   questionsPerAttempt: 20,
+  proctoringLimit: 3,
   questions: [],
 };
 
@@ -136,6 +139,7 @@ export default function AdminDashboard() {
         quizTimeLimitSec: 3600,
         perQuestionTimeLimitSec: form.usePerQuestionTimer ? Number(form.perQuestionTimeLimitSec || 30) : 30,
         questionsPerAttempt: Number(form.questionsPerAttempt || 20),
+        proctoringLimit: Number(form.proctoringLimit || 3),
         startsAt: toIsoOrEmpty(form.startsAt),
         endsAt: toIsoOrEmpty(form.endsAt),
         questions: parsedQuestions,
@@ -188,6 +192,7 @@ export default function AdminDashboard() {
         endsAt: toLocalInputValue(quiz.endsAt),
         perQuestionTimeLimitSec: quiz.perQuestionTimeLimitSec || 30,
         questionsPerAttempt: quiz.questionsPerAttempt || 20,
+        proctoringLimit: quiz.proctoringLimit || 3,
       });
       setQuestionJson(JSON.stringify(quiz.questions || [], null, 2));
     } catch (err) {
@@ -424,6 +429,22 @@ export default function AdminDashboard() {
             />
           </label>
 
+          <label className="flex flex-col gap-1.5">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-slate-300">
+              <FiAlertTriangle className="h-3.5 w-3.5 text-slate-500" />
+              Proctoring Limit (Violations)
+            </span>
+            <input
+              type="number"
+              className={inputClass}
+              value={form.proctoringLimit}
+              onChange={(e) => setForm((c) => ({ ...c, proctoringLimit: Number(e.target.value) }))}
+              placeholder="e.g. 3"
+              min={1}
+              required
+            />
+          </label>
+
           <label className="md:col-span-2 flex flex-col gap-1.5">
             <span className="flex items-center gap-1.5 text-sm font-medium text-slate-300">
               <FiList className="h-3.5 w-3.5 text-slate-500" />
@@ -477,11 +498,9 @@ export default function AdminDashboard() {
                 <div className="min-w-0">
                   <p className="font-semibold text-white truncate">{quiz.title}</p>
                   <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold ${quiz.status === "running"
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-semibold ${quiz.status === "published"
                         ? "bg-emerald-500/10 text-emerald-400"
-                        : quiz.status === "paused"
-                          ? "bg-amber-500/10 text-amber-400"
-                          : "bg-slate-500/10 text-slate-400"
+                        : "bg-slate-500/10 text-slate-400"
                       }`}>
                       {quiz.status}
                     </span>
@@ -490,7 +509,7 @@ export default function AdminDashboard() {
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-slate-600">
-                    Timer: {quiz.timerMode === "quiz" ? "Off" : `${quiz.perQuestionTimeLimitSec}s per question`}
+                    Timer: {quiz.timerMode === "quiz" ? "Off" : `${quiz.perQuestionTimeLimitSec}s per question`} | Limit: {quiz.proctoringLimit || 3}
                   </p>
                 </div>
 
@@ -498,11 +517,12 @@ export default function AdminDashboard() {
                   <button type="button" onClick={() => onEditQuiz(quiz._id)} className={btnOutline}>
                     <FiEdit2 className="h-3.5 w-3.5" /> Edit
                   </button>
-                  <button type="button" onClick={() => onSetStatus(quiz, "running")} className={btnOutline}>
-                    <FiPlayCircle className="h-3.5 w-3.5 text-emerald-400" /> Start
-                  </button>
-                  <button type="button" onClick={() => onSetStatus(quiz, "paused")} className={btnOutline}>
-                    <FiPauseCircle className="h-3.5 w-3.5 text-amber-400" /> Pause
+                  <button type="button" onClick={() => onSetStatus(quiz, quiz.status === "published" ? "draft" : "published")} className={btnOutline}>
+                    {quiz.status === "published" ? (
+                      <><FiPauseCircle className="h-3.5 w-3.5 text-amber-400" /> Unpublish</>
+                    ) : (
+                      <><FiPlayCircle className="h-3.5 w-3.5 text-emerald-400" /> Publish</>
+                    )}
                   </button>
                   <button type="button" onClick={() => onDeleteQuiz(quiz._id)} className={btnDanger}>
                     <FiTrash2 className="h-3.5 w-3.5" /> Delete
@@ -612,12 +632,13 @@ export default function AdminDashboard() {
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Score</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Warnings</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Submitted</th>
+                <th className="px-4 py-3 text-xs text-right font-semibold uppercase tracking-wider text-slate-400">Actions</th>
               </tr>
             </thead>
             <tbody>
               {!results.length ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
                     No results yet.
                   </td>
                 </tr>
@@ -629,15 +650,20 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">
                     {row.quizId?.title || "Unknown"}
+                    {row.isLocked && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold text-rose-400">
+                        Locked
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${row.status === "submitted"
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : row.status === "in-progress"
-                          ? "bg-amber-500/10 text-amber-400"
-                          : row.status === "disqualified"
-                            ? "bg-rose-500/10 text-rose-400"
-                            : "bg-slate-500/10 text-slate-400"
+                      ? "bg-emerald-500/10 text-emerald-400"
+                      : row.status === "in-progress"
+                        ? "bg-amber-500/10 text-amber-400"
+                        : row.status === "disqualified"
+                          ? "bg-rose-500/10 text-rose-400"
+                          : "bg-slate-500/10 text-slate-400"
                       }`}>
                       {row.status}
                     </span>
@@ -658,6 +684,44 @@ export default function AdminDashboard() {
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-500">
                     {row.submittedAt ? new Date(row.submittedAt).toLocaleString() : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      {(row.status === "disqualified" || row.status === "in_progress" || row.isLocked) && (
+                        <button
+                          type="button"
+                          title="Unlock/Resume Attempt"
+                          onClick={async () => {
+                            try {
+                              await unlockAttempt(row._id);
+                              await loadAll();
+                            } catch (err) {
+                              setError(err.message || "Failed to unlock");
+                            }
+                          }}
+                          className="inline-flex items-center rounded-lg bg-emerald-500/10 p-2 text-emerald-400 transition-colors hover:bg-emerald-500/20"
+                        >
+                          <FiPlayCircle className="h-4 w-4" />
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        title="Delete Attempt (Allow Re-attempt)"
+                        onClick={async () => {
+                          if (!window.confirm("Are you sure you want to delete this attempt? This lets the user start over.")) return;
+                          try {
+                            await resetAttempt(row._id);
+                            await loadAll();
+                          } catch (err) {
+                            setError(err.message || "Failed to delete attempt");
+                          }
+                        }}
+                        className="inline-flex items-center rounded-lg bg-rose-500/10 p-2 text-rose-400 transition-colors hover:bg-rose-500/20"
+                      >
+                        <FiTrash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

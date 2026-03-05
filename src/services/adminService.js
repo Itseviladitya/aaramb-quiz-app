@@ -67,3 +67,15 @@ export function deleteQuiz(quizId) {
 export function fetchAdminResults() {
   return apiRequest("/admin/results");
 }
+
+export function resetAttempt(attemptId) {
+  return apiRequest(`/admin/attempts/${attemptId}/reset`, {
+    method: "DELETE",
+  });
+}
+
+export function unlockAttempt(attemptId) {
+  return apiRequest(`/admin/attempts/${attemptId}/unlock`, {
+    method: "PATCH",
+  });
+}
