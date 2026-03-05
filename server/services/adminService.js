@@ -100,7 +100,6 @@ async function createQuiz(payload, adminUserId) {
         correctOptionKey: q.correctOptionKey,
         points: q.points || 1,
         order: index,
-        timeLimitSecOverride: q.timeLimitSecOverride || null,
       }))
     );
     await Quiz.findByIdAndUpdate(quiz._id, { totalQuestionPool: payload.questions.length });
@@ -162,7 +161,6 @@ async function updateQuiz(quizId, payload) {
           correctOptionKey: q.correctOptionKey,
           points: q.points || 1,
           order: index,
-          timeLimitSecOverride: q.timeLimitSecOverride || null,
         }))
       );
     }

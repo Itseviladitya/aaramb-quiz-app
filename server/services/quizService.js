@@ -21,8 +21,7 @@ function isQuizWithinSchedule(quiz, now = new Date()) {
 async function listAvailableQuizzes() {
   const now = new Date();
   return Quiz.find({
-    status: "published",
-    $or: [{ startsAt: null }, { startsAt: { $lte: now }, endsAt: { $gte: now } }],
+    status: "published"
   })
     .select("title description timerMode startsAt endsAt quizTimeLimitSec perQuestionTimeLimitSec questionsPerAttempt")
     .sort({ createdAt: -1 })
@@ -44,12 +43,15 @@ async function startAttempt({ userId, quizId }) {
     throw Object.assign(new Error("Quiz is not available right now"), { status: 400 });
   }
 
-  const existing = await Attempt.findOne({ userId, quizId, status: "in_progress" }).lean();
+  const existing = await Attempt.findOne({ userId, quizId }).lean();
   if (existing) {
-    if (existing.isLocked) {
-      throw Object.assign(new Error("Your attempt has been locked. Please contact the administrator."), { status: 403 });
+    if (existing.status === "in_progress") {
+      if (existing.isLocked) {
+        throw Object.assign(new Error("Your attempt has been locked. Please contact the administrator."), { status: 403 });
+      }
+      return existing; // Resume in_progress attempt
     }
-    return existing;
+    throw Object.assign(new Error("You have already attempted or been disqualified from this quiz. Contact admin to reset your attempt."), { status: 403 });
   }
 
   const pool = await Question.aggregate([
@@ -180,7 +182,11 @@ async function submitAnswer({ userId, attemptId, questionId, selectedOptionKey, 
     (quiz.timerMode === "quiz" ? Number.MAX_SAFE_INTEGER : quiz.perQuestionTimeLimitSec);
 
   const responseTimeMs = now.getTime() - new Date(questionServedAt).getTime();
-  if (responseTimeMs > effectiveQuestionLimitSec * 1000) {
+
+  // Only STRICTLY timeout the whole attempt if they are egregiously late 
+  // (e.g. they turned off JS to bypass the auto-submit).
+  // We add a 15-second grace period for the client's auto-submit POST request to arrive.
+  if (responseTimeMs > (effectiveQuestionLimitSec + 15) * 1000) {
     attempt.status = "expired";
     await attempt.save();
     throw Object.assign(new Error("Question timer expired"), { status: 408 });
@@ -191,7 +197,8 @@ async function submitAnswer({ userId, attemptId, questionId, selectedOptionKey, 
     attempt.warnings += 1;
   }
 
-  const isCorrect = question.correctOptionKey === selectedOptionKey;
+  // If selectedOptionKey is null, they ran out of time or explicitly skipped. Score as 0.
+  const isCorrect = selectedOptionKey !== null && question.correctOptionKey === selectedOptionKey;
   const awarded = isCorrect ? question.points : 0;
 
   attempt.answers.push({

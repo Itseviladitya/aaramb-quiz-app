@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 export function useProctoring({ onViolation }) {
   const [warnings, setWarnings] = useState(0);
+  const lastWarningTime = useRef(0);
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -13,6 +14,13 @@ export function useProctoring({ onViolation }) {
       if (!mountedRef.current) {
         return;
       }
+      const now = Date.now();
+      if (now - lastWarningTime.current < 1500) {
+        // Prevent duplicate warnings for the same user action (e.g. blur + visibilitychange)
+        return;
+      }
+      lastWarningTime.current = now;
+
       setWarnings((current) => current + 1);
       onViolation?.(reason);
     };
