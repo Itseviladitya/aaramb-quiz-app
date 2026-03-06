@@ -68,6 +68,8 @@ function normalizePositiveInt(value, fallback) {
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("overview"); // overview, quizzes, users, results
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSlowLoading, setIsSlowLoading] = useState(false);
 
   const [stats, setStats] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
@@ -88,6 +90,8 @@ export default function AdminDashboard() {
   const canManageRoles = isAdmin;
 
   const loadAll = useCallback(async () => {
+    setIsLoading(true);
+    setIsSlowLoading(false);
     try {
       const [s, q, u, r, req, logsResponse] = await Promise.all([
         fetchAdminStats(),
@@ -105,6 +109,8 @@ export default function AdminDashboard() {
       setAuditLogs(logsResponse.rows || []);
     } catch (err) {
       setError(err.message || "Failed to load admin dashboard");
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -113,6 +119,12 @@ export default function AdminDashboard() {
       loadAll();
     });
   }, [loadAll]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => setIsSlowLoading(true), 5000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
 
   async function onCreateQuiz(event) {
     event.preventDefault();
@@ -304,6 +316,27 @@ export default function AdminDashboard() {
     { id: "auditLogs", label: "Manager Logs" },
   ];
 
+  if (isLoading && !stats) {
+    return (
+      <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 p-10 text-center shadow-xl">
+        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-cyan-500" />
+        <p className="mt-4 text-sm font-medium text-slate-300">Loading admin panel data...</p>
+        {isSlowLoading ? (
+          <p className="mt-2 text-xs text-amber-300">
+            This is taking longer than expected. Network may be slow.
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={loadAll}
+          className="mt-5 inline-flex cursor-pointer items-center rounded-lg border border-slate-600/50 bg-slate-800/60 px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700"
+        >
+          Retry Loading
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* ─── Header ─── */}
@@ -330,7 +363,7 @@ export default function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === tab.id
+                className={`cursor-pointer px-4 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === tab.id
                     ? "bg-slate-700 shadow flex-1 text-white"
                     : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                   }`}
@@ -350,7 +383,7 @@ export default function AdminDashboard() {
           <button
             type="button"
             onClick={() => setError("")}
-            className="ml-auto text-rose-400 hover:text-rose-300"
+            className="ml-auto cursor-pointer text-rose-400 hover:text-rose-300"
           >
             <FiXCircle className="h-4 w-4" />
           </button>
