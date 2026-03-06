@@ -14,6 +14,7 @@ import {
   FiMenu,
   FiX,
   FiEdit3,
+  FiUserPlus,
 } from "react-icons/fi";
 
 export default function Navbar() {
@@ -73,14 +74,24 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <button
-              type="button"
+            <>
+              <button
+                type="button"
                 onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/30"
-            >
-              <FiLogIn className="h-4 w-4" />
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition-all hover:bg-white/10 hover:text-white"
+              >
+                <FiUserPlus className="h-4 w-4" />
+                Sign up
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition-all hover:shadow-cyan-500/30"
+              >
+                <FiLogIn className="h-4 w-4" />
                 Login
-            </button>
+              </button>
+            </>
           )}
         </div>
 
@@ -136,17 +147,30 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  router.push(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`);
-                }}
-                className="flex w-full items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 px-3 py-2.5 text-sm font-semibold text-white"
-              >
-                <FiLogIn className="h-4 w-4" />
-                Login
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    router.push(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm font-semibold text-slate-200"
+                >
+                  <FiUserPlus className="h-4 w-4" />
+                  Sign up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    router.push(`/login?callbackUrl=${encodeURIComponent("/dashboard")}`);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 px-3 py-2.5 text-sm font-semibold text-white"
+                >
+                  <FiLogIn className="h-4 w-4" />
+                  Login
+                </button>
+              </>
             )}
           </div>
         </div>

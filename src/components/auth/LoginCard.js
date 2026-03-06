@@ -62,8 +62,8 @@ export default function LoginCard({ callbackUrl = "/dashboard" }) {
 
   return (
     <section className="mx-auto mt-10 max-w-md rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-      <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Sign in</h1>
-      <p className="mt-2 text-sm text-zinc-600">Use GitHub or Google login to access quizzes, leaderboard, and secure sessions.</p>
+      <h1 className="text-2xl font-bold tracking-tight text-zinc-900">Login / Sign up</h1>
+      <p className="mt-2 text-sm text-zinc-600">Use GitHub or Google to continue. If your account does not exist, it will be created automatically.</p>
       {error ? (
         <p className="mt-3 rounded-md border border-rose-300 bg-rose-50 p-2 text-xs text-rose-700">
           Sign-in error: {error}. Try again once.
@@ -91,6 +91,10 @@ export default function LoginCard({ callbackUrl = "/dashboard" }) {
             No login provider is configured. Please check OAuth environment variables.
           </p>
         ) : null}
+      </div>
+
+      <div className="mt-5 border-t border-zinc-200 pt-4 text-center text-xs text-zinc-500">
+        Both <span className="font-medium text-zinc-700">Login</span> and <span className="font-medium text-zinc-700">Sign up</span> use the same page.
       </div>
     </section>
   );

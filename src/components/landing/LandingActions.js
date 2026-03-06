@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FiArrowRight, FiGithub } from "react-icons/fi";
+import { FiArrowRight } from "react-icons/fi";
 import ProfileCompletionModal from "@/components/profile/ProfileCompletionModal";
 
 export default function LandingActions({ sessionUser }) {
@@ -42,8 +42,7 @@ export default function LandingActions({ sessionUser }) {
               onClick={onLoginClick}
               className="landing-btn-secondary inline-flex items-center gap-2 text-sm"
             >
-              <FiGithub className="w-4 h-4" />
-              Login with GitHub
+              Login
             </button>
             <button
               type="button"
