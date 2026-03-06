@@ -11,9 +11,11 @@ import {
   fetchAdminQuizDetail,
   fetchAdminQuizzes,
   fetchAdminAuditLogs,
+  fetchAdminResubmitRequests,
   fetchAdminResults,
   fetchAdminStats,
   fetchAdminUsers,
+  reviewAdminResubmitRequest,
   setUserRole,
   setUserBan,
   updateQuiz,
@@ -71,6 +73,7 @@ export default function AdminDashboard() {
   const [quizzes, setQuizzes] = useState([]);
   const [users, setUsers] = useState([]);
   const [results, setResults] = useState([]);
+  const [resubmitRequests, setResubmitRequests] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [questionJson, setQuestionJson] = useState("[]");
@@ -86,18 +89,19 @@ export default function AdminDashboard() {
 
   const loadAll = useCallback(async () => {
     try {
-      const [s, q, u, r] = await Promise.all([
+      const [s, q, u, r, req, logsResponse] = await Promise.all([
         fetchAdminStats(),
         fetchAdminQuizzes(),
         fetchAdminUsers(),
         fetchAdminResults(),
+        fetchAdminResubmitRequests(),
+        fetchAdminAuditLogs(),
       ]);
       setStats(s);
       setQuizzes(q.quizzes || []);
       setUsers(u.users || []);
       setResults(r.rows || []);
-
-      const logsResponse = await fetchAdminAuditLogs();
+      setResubmitRequests(req.rows || []);
       setAuditLogs(logsResponse.rows || []);
     } catch (err) {
       setError(err.message || "Failed to load admin dashboard");
@@ -283,6 +287,15 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleReviewResubmitRequest(requestId, decision, reviewNote) {
+    try {
+      await reviewAdminResubmitRequest(requestId, { decision, reviewNote });
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Failed to review re-submit request");
+    }
+  }
+
   const tabs = [
     { id: "overview", label: "Dashboard" },
     { id: "quizzes", label: "Quizzes" },
@@ -385,9 +398,11 @@ export default function AdminDashboard() {
       {activeTab === "results" && (
         <AdminResultsTab
           results={results}
+          resubmitRequests={resubmitRequests}
           quizzes={quizzes}
           onUnlockAttempt={handleUnlockAttempt}
           onResetAttempt={handleResetAttempt}
+          onReviewResubmitRequest={handleReviewResubmitRequest}
         />
       )}
 

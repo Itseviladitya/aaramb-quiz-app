@@ -79,6 +79,26 @@ export function fetchAdminAuditLogs() {
   return apiRequest("/admin/audit-logs");
 }
 
+export function fetchAdminResubmitRequests(params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.status) {
+    searchParams.set("status", params.status);
+  }
+  if (params.quizId) {
+    searchParams.set("quizId", params.quizId);
+  }
+
+  const query = searchParams.toString();
+  return apiRequest(`/admin/resubmit-requests${query ? `?${query}` : ""}`);
+}
+
+export function reviewAdminResubmitRequest(requestId, payload) {
+  return apiRequest(`/admin/resubmit-requests/${requestId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function resetAttempt(attemptId) {
   return apiRequest(`/admin/attempts/${attemptId}/reset`, {
     method: "DELETE",

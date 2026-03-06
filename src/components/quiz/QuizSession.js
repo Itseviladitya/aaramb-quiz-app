@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FiAlertTriangle, FiCheckCircle, FiClock, FiShield, FiTarget, FiLogOut, FiXCircle } from "react-icons/fi";
 import { useProctoring } from "@/hooks/useProctoring";
 import { useQuizSession } from "@/hooks/useQuizSession";
-import { reportViolation } from "@/services/quizService";
+import { reportViolation, requestResubmit } from "@/services/quizService";
 import { apiRequest } from "@/services/apiClient";
 
 export default function QuizSession({ attemptId }) {
@@ -12,6 +12,7 @@ export default function QuizSession({ attemptId }) {
   const [isLockedLocal, setIsLockedLocal] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [lastWarningReason, setLastWarningReason] = useState("");
+  const [requestState, setRequestState] = useState({ loading: false, message: "", error: "" });
   const {
     loading,
     submitting,
@@ -103,6 +104,30 @@ export default function QuizSession({ attemptId }) {
     return `${warnings}/${limitWarnings || "?"} warnings`;
   }, [warnings, limitWarnings]);
 
+  const handleRequestResubmit = useCallback(async () => {
+    const reason = window.prompt("Explain your issue (technical glitch/disqualification concern):");
+    if (!reason || reason.trim().length < 5) {
+      setRequestState({ loading: false, message: "", error: "Please provide a clear reason (min 5 chars)." });
+      return;
+    }
+
+    setRequestState({ loading: true, message: "", error: "" });
+    try {
+      await requestResubmit(attemptId, reason.trim());
+      setRequestState({
+        loading: false,
+        message: "Request submitted successfully. Admin/Manager will review it soon.",
+        error: "",
+      });
+    } catch (reqError) {
+      setRequestState({
+        loading: false,
+        message: "",
+        error: reqError.message || "Unable to submit request",
+      });
+    }
+  }, [attemptId]);
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -127,12 +152,27 @@ export default function QuizSession({ attemptId }) {
             Your quiz attempt has been locked due to proctoring violations or exiting early.
             Please contact your administrator if you believe this is an error.
           </p>
-          <button
-            onClick={() => window.location.href = '/dashboard'}
-            className="rounded-xl bg-slate-800 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:bg-slate-700"
-          >
-            Return to Dashboard
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={handleRequestResubmit}
+              disabled={requestState.loading}
+              className="rounded-xl bg-amber-500/20 px-6 py-3 font-semibold text-amber-300 shadow-lg transition-all hover:bg-amber-500/30 disabled:opacity-50"
+            >
+              {requestState.loading ? "Submitting..." : "Request Re-submit"}
+            </button>
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className="rounded-xl bg-slate-800 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:bg-slate-700"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+          {requestState.message ? (
+            <p className="mt-4 text-sm text-emerald-300">{requestState.message}</p>
+          ) : null}
+          {requestState.error ? (
+            <p className="mt-4 text-sm text-rose-300">{requestState.error}</p>
+          ) : null}
         </div>
       </div>
     );

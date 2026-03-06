@@ -25,3 +25,10 @@ export function reportViolation(attemptId, reason) {
     body: JSON.stringify({ reason }),
   });
 }
+
+export function requestResubmit(attemptId, reason) {
+  return apiRequest(`/quizzes/attempts/${attemptId}/resubmit-request`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}

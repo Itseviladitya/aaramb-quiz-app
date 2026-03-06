@@ -3,6 +3,7 @@ const Question = require("../models/Question");
 const User = require("../models/User");
 const Attempt = require("../models/Attempt");
 const AdminAuditLog = require("../models/AdminAuditLog");
+const ResubmitRequest = require("../models/ResubmitRequest");
 
 function parseDateOrNull(value) {
   if (!value) {
@@ -322,6 +323,99 @@ async function listAuditLogs() {
     .lean();
 }
 
+async function createResubmitRequest({ attemptId, userId, reason }) {
+  const attempt = await Attempt.findOne({ _id: attemptId, userId }).lean();
+  if (!attempt) {
+    throw Object.assign(new Error("Attempt not found for this user"), { status: 404 });
+  }
+
+  const safeReason = String(reason || "").trim();
+  if (safeReason.length < 5) {
+    throw Object.assign(new Error("Please provide a clear reason (minimum 5 characters)"), { status: 400 });
+  }
+
+  const pending = await ResubmitRequest.findOne({ attemptId, userId, status: "pending" }).lean();
+  if (pending) {
+    throw Object.assign(new Error("A pending re-submit request already exists for this attempt"), { status: 409 });
+  }
+
+  return ResubmitRequest.create({
+    attemptId,
+    quizId: attempt.quizId,
+    userId,
+    reason: safeReason,
+    status: "pending",
+    reviewAction: "reset",
+  });
+}
+
+async function listResubmitRequests(filters = {}) {
+  const query = {};
+  if (filters.status && ["pending", "approved", "rejected"].includes(filters.status)) {
+    query.status = filters.status;
+  }
+  if (filters.quizId) {
+    query.quizId = filters.quizId;
+  }
+
+  return ResubmitRequest.find(query)
+    .sort({ status: 1, createdAt: -1 })
+    .limit(1000)
+    .populate("userId", "name email fullName studentId branch yearOfStudy")
+    .populate("quizId", "title")
+    .populate("attemptId", "status warnings disqualifyReason totalScore")
+    .populate("reviewedBy", "name email role")
+    .lean();
+}
+
+async function reviewResubmitRequest({ requestId, actorUserId, actorRole, decision, reviewNote }) {
+  const request = await ResubmitRequest.findById(requestId);
+  if (!request) {
+    throw Object.assign(new Error("Re-submit request not found"), { status: 404 });
+  }
+
+  if (request.status !== "pending") {
+    throw Object.assign(new Error("This request has already been reviewed"), { status: 409 });
+  }
+
+  const safeDecision = String(decision || "").toLowerCase();
+  if (!["approved", "rejected"].includes(safeDecision)) {
+    throw Object.assign(new Error("Invalid decision"), { status: 400 });
+  }
+
+  const safeNote = String(reviewNote || "").trim();
+  if (safeDecision === "rejected" && safeNote.length < 3) {
+    throw Object.assign(new Error("Please add a short review note for rejection"), { status: 400 });
+  }
+
+  if (safeDecision === "approved") {
+    await Attempt.findByIdAndDelete(request.attemptId);
+    request.reviewAction = "reset";
+  }
+
+  request.status = safeDecision;
+  request.reviewNote = safeNote;
+  request.reviewedBy = actorUserId;
+  request.reviewedAt = new Date();
+  await request.save();
+
+  await createAuditLog({
+    actorUserId,
+    actorRole,
+    action: safeDecision === "approved" ? "RESUBMIT_REQUEST_APPROVED" : "RESUBMIT_REQUEST_REJECTED",
+    targetType: "resubmit_request",
+    targetId: requestId,
+    details: {
+      attemptId: String(request.attemptId),
+      decision: safeDecision,
+      reviewAction: request.reviewAction,
+      reviewNote: safeNote,
+    },
+  });
+
+  return request.toObject();
+}
+
 function escapeCsv(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return `"${text.replaceAll('"', '""')}"`;
@@ -465,6 +559,9 @@ module.exports = {
   listResults,
   createAuditLog,
   listAuditLogs,
+  createResubmitRequest,
+  listResubmitRequests,
+  reviewResubmitRequest,
   buildResultsCsv,
   buildRankedResultsCsv,
 };
