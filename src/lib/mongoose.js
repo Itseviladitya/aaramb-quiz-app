@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 
 const uri = process.env.MONGODB_URI;
+const maxPoolSize = Number(process.env.MONGODB_MAX_POOL_SIZE || 100);
+const minPoolSize = Number(process.env.MONGODB_MIN_POOL_SIZE || 10);
+const serverSelectionTimeoutMS = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 5000);
 
 if (!uri) {
   throw new Error("Missing MONGODB_URI in environment");
@@ -19,9 +22,9 @@ export async function connectMongoose() {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(uri, {
-      maxPoolSize: 25,
-      minPoolSize: 5,
-      serverSelectionTimeoutMS: 5000,
+      maxPoolSize,
+      minPoolSize,
+      serverSelectionTimeoutMS,
     });
   }
 

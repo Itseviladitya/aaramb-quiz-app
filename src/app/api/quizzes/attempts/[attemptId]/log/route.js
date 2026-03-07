@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { connectMongoose } from "@/lib/mongoose";
 import { logUserActivity } from "../../../../../../../server/services/quizService";
 import { requireUser } from "@/lib/apiAuth";
+import { rateLimit } from "@/lib/redis";
+
+const LOG_RATE_LIMIT = Number(process.env.QUIZ_LOG_RATE_LIMIT || 25);
+const LOG_RATE_WINDOW_SECONDS = Number(process.env.QUIZ_LOG_RATE_WINDOW_SECONDS || 10);
 
 export async function POST(request, { params }) {
     try {
@@ -11,6 +15,22 @@ export async function POST(request, { params }) {
         const { attemptId } = await params;
         const body = await request.json();
         const { action, message } = body;
+
+        const limiter = await rateLimit({
+            key: `logs:${user._id.toString()}:${attemptId}`,
+            limit: LOG_RATE_LIMIT,
+            windowSeconds: LOG_RATE_WINDOW_SECONDS,
+        });
+
+        if (!limiter.allowed) {
+            return NextResponse.json(
+                {
+                    error: "Too many activity logs in a short time. Please wait and retry.",
+                    retryAfterSeconds: limiter.resetInSeconds,
+                },
+                { status: 429 }
+            );
+        }
 
         if (!action || !message) {
             return NextResponse.json({ error: "Action and message required" }, { status: 400 });
