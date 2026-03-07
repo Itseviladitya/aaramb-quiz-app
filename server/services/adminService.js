@@ -52,7 +52,12 @@ async function getDashboardStats() {
 }
 
 async function listUsers() {
-  return User.find({}).select("name email role isBanned disqualifiedQuizIds createdAt").sort({ createdAt: -1 }).lean();
+  return User.find({})
+    .select(
+      "name fullName email role isBanned disqualifiedQuizIds profileCompleted branch yearOfStudy studentId phoneNumber lastActiveAt createdAt"
+    )
+    .sort({ createdAt: -1 })
+    .lean();
 }
 
 async function deleteUser(userId) {

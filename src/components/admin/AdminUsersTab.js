@@ -5,6 +5,38 @@ const selectClass = "rounded-xl border border-slate-600/50 bg-slate-700/50 px-4 
 const btnOutline = "inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-600/50 bg-slate-700/30 px-3.5 py-2 text-sm font-medium text-slate-300 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white";
 const btnDanger = "inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/30 px-3.5 py-2 text-sm font-medium text-rose-400 transition-all hover:border-rose-500/50 hover:bg-rose-950/50";
 
+const sortOptions = [
+    { value: "createdAt", label: "Newest Joined" },
+    { value: "lastActiveAt", label: "Last Active" },
+    { value: "name", label: "Name" },
+    { value: "email", label: "Email" },
+    { value: "role", label: "Role" },
+    { value: "branch", label: "Branch" },
+    { value: "yearOfStudy", label: "Year" },
+    { value: "isBanned", label: "Ban Status" },
+    { value: "profileCompleted", label: "Profile Status" },
+];
+
+function formatDate(value) {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString();
+}
+
+function toSortableValue(user, key) {
+    if (key === "createdAt" || key === "lastActiveAt") {
+        return user[key] ? new Date(user[key]).getTime() : 0;
+    }
+    if (key === "isBanned" || key === "profileCompleted") {
+        return user[key] ? 1 : 0;
+    }
+    if (key === "yearOfStudy") {
+        return Number(user.yearOfStudy || 0);
+    }
+    return String(user[key] || "").toLowerCase();
+}
+
 export default function AdminUsersTab({
     users,
     quizzes,
@@ -19,13 +51,20 @@ export default function AdminUsersTab({
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [filter, setFilter] = useState("all"); // 'all', 'active', 'banned'
+    const [sortBy, setSortBy] = useState("createdAt");
+    const [sortDirection, setSortDirection] = useState("desc");
     const [roleSelectionByUser, setRoleSelectionByUser] = useState({});
 
     const filteredUsers = useMemo(() => {
-        return users.filter(user => {
+        const searched = users.filter(user => {
+            const searchText = searchQuery.toLowerCase();
             const matchesSearch =
-                (user.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (user.email || "").toLowerCase().includes(searchQuery.toLowerCase());
+                (user.name || "").toLowerCase().includes(searchText) ||
+                (user.fullName || "").toLowerCase().includes(searchText) ||
+                (user.email || "").toLowerCase().includes(searchText) ||
+                (user.branch || "").toLowerCase().includes(searchText) ||
+                (user.studentId || "").toLowerCase().includes(searchText) ||
+                (user.phoneNumber || "").toLowerCase().includes(searchText);
 
             const matchesFilter =
                 filter === "all" ? true :
@@ -34,7 +73,19 @@ export default function AdminUsersTab({
 
             return matchesSearch && matchesFilter;
         });
-    }, [users, searchQuery, filter]);
+
+        return [...searched].sort((a, b) => {
+            const aValue = toSortableValue(a, sortBy);
+            const bValue = toSortableValue(b, sortBy);
+            if (aValue === bValue) return 0;
+
+            const ascending = sortDirection === "asc";
+            if (aValue > bValue) {
+                return ascending ? 1 : -1;
+            }
+            return ascending ? -1 : 1;
+        });
+    }, [users, searchQuery, filter, sortBy, sortDirection]);
 
     return (
         <div className="space-y-6">
@@ -70,7 +121,30 @@ export default function AdminUsersTab({
                         <option value="active">Active Only</option>
                         <option value="banned">Banned Only</option>
                     </select>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="rounded-xl border border-slate-600/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none sm:w-52"
+                    >
+                        {sortOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                Sort: {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={sortDirection}
+                        onChange={(e) => setSortDirection(e.target.value)}
+                        className="rounded-xl border border-slate-600/50 bg-slate-900/50 px-4 py-2.5 text-sm text-white focus:border-cyan-500/50 focus:outline-none sm:w-36"
+                    >
+                        <option value="desc">Desc</option>
+                        <option value="asc">Asc</option>
+                    </select>
                 </div>
+
+                <p className="mb-4 text-xs text-slate-400">
+                    Showing <span className="font-semibold text-slate-200">{filteredUsers.length}</span> of {users.length} users
+                </p>
 
                 {!filteredUsers.length ? (
                     <div className="rounded-xl border border-slate-700/30 bg-slate-900/40 p-12 text-center">
@@ -85,10 +159,15 @@ export default function AdminUsersTab({
                             >
                                 <div className="min-w-0">
                                     <p className="font-semibold text-white truncate flex items-center gap-2">
-                                        {user.name || user.email}
+                                        {user.fullName || user.name || user.email}
                                         {user.role === "admin" && (
                                             <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-300">
                                                 Admin
+                                            </span>
+                                        )}
+                                        {user.role === "manager" && (
+                                            <span className="inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
+                                                Manager
                                             </span>
                                         )}
                                         {user.isBanned && (
@@ -98,6 +177,16 @@ export default function AdminUsersTab({
                                         )}
                                     </p>
                                     <p className="text-xs text-slate-500 mt-1">{user.email}</p>
+                                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-400">
+                                        <span>Student ID: {user.studentId || "-"}</span>
+                                        <span>Branch: {user.branch || "-"}</span>
+                                        <span>Year: {user.yearOfStudy || "-"}</span>
+                                        <span>Phone: {user.phoneNumber || "-"}</span>
+                                        <span>Profile: {user.profileCompleted ? "Completed" : "Incomplete"}</span>
+                                        <span>Disqualified Quizzes: {Array.isArray(user.disqualifiedQuizIds) ? user.disqualifiedQuizIds.length : 0}</span>
+                                        <span>Joined: {formatDate(user.createdAt)}</span>
+                                        <span>Last Active: {formatDate(user.lastActiveAt)}</span>
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
