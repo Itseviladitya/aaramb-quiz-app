@@ -3,7 +3,7 @@ import { getJsonCache, setJsonCache } from "@/lib/redis";
 import leaderboardServiceModule from "../../../../server/services/leaderboardService";
 
 const leaderboardService = leaderboardServiceModule.default || leaderboardServiceModule;
-const LEADERBOARD_CACHE_KEY = "leaderboard:top50";
+const LEADERBOARD_CACHE_KEY = "leaderboard:top50:correct-answers";
 const LEADERBOARD_CACHE_TTL_SEC = 20;
 
 export async function GET() {

@@ -55,7 +55,7 @@ export default function LandingLeaderboard({ topAttempts }) {
                                             Quiz
                                         </th>
                                         <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-400 text-right">
-                                            Score
+                                            Correct Answers
                                         </th>
                                     </tr>
                                 </thead>
@@ -96,7 +96,7 @@ export default function LandingLeaderboard({ topAttempts }) {
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <span className="inline-flex items-center rounded-full bg-cyan-500/10 px-3 py-1 text-sm font-bold text-cyan-400">
-                                                    {item.totalScore ?? 0}
+                                                    {item.correctAnswers ?? 0}
                                                 </span>
                                             </td>
                                         </tr>

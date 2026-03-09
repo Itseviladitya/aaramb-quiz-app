@@ -58,12 +58,12 @@ export default function LeaderboardPage() {
   const stats = useMemo(() => {
     const participantEmails = new Set(rows.map((row) => row.userId?.email).filter(Boolean));
     const quizTitles = new Set(rows.map((row) => row.quizId?.title).filter(Boolean));
-    const highestScore = rows.length ? Math.max(...rows.map((row) => row.totalScore || 0)) : 0;
+    const highestCorrectAnswers = rows.length ? Math.max(...rows.map((row) => row.correctAnswers || 0)) : 0;
 
     return {
       participants: participantEmails.size,
       quizzes: quizTitles.size,
-      highestScore,
+      highestCorrectAnswers,
       entries: rows.length,
     };
   }, [rows]);
@@ -99,9 +99,9 @@ export default function LeaderboardPage() {
         </div>
         <div className="rounded-xl border border-slate-700/50 bg-slate-900/60 p-4">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            <FiTarget /> Highest Score
+            <FiTarget /> Highest Correct Answers
           </p>
-          <p className="mt-2 text-2xl font-bold">{stats.highestScore}</p>
+          <p className="mt-2 text-2xl font-bold">{stats.highestCorrectAnswers}</p>
         </div>
         <div className="rounded-xl border border-slate-700/50 bg-slate-900/60 p-4">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -135,7 +135,7 @@ export default function LeaderboardPage() {
                     <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${rankStyle(rank)}`}>#{rank}</span>
                     <p className="mt-3 truncate text-sm font-semibold text-slate-100">{row.userId?.name || row.userId?.email || "Student"}</p>
                     <p className="mt-1 truncate text-xs text-slate-400">{row.quizId?.title || "Quiz"}</p>
-                    <p className="mt-3 text-xl font-extrabold text-cyan-300">{row.totalScore ?? 0}</p>
+                    <p className="mt-3 text-xl font-extrabold text-cyan-300">{row.correctAnswers ?? 0}</p>
                   </div>
                 );
               })}
@@ -149,7 +149,7 @@ export default function LeaderboardPage() {
                   <th className="px-4 py-3">Rank</th>
                   <th className="px-4 py-3">User</th>
                   <th className="px-4 py-3">Quiz</th>
-                  <th className="px-4 py-3">Score</th>
+                  <th className="px-4 py-3">Correct Answers</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,7 +162,7 @@ export default function LeaderboardPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-200">{row.userId?.name || row.userId?.email || "Student"}</td>
                       <td className="px-4 py-3 text-slate-400">{row.quizId?.title || "Quiz"}</td>
-                      <td className="px-4 py-3 font-semibold text-cyan-300">{row.totalScore ?? 0}</td>
+                      <td className="px-4 py-3 font-semibold text-cyan-300">{row.correctAnswers ?? 0}</td>
                     </tr>
                   );
                 })}
