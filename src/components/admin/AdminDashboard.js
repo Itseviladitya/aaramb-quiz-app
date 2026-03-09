@@ -18,6 +18,7 @@ import {
   reviewAdminResubmitRequest,
   setUserRole,
   setUserBan,
+  updateAttemptStatus,
   updateQuiz,
   updateQuizStatus,
   unlockAttempt,
@@ -299,6 +300,15 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleUpdateAttemptStatus(attemptId, status, disqualifyReason = "") {
+    try {
+      await updateAttemptStatus(attemptId, status, disqualifyReason);
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Failed to update attempt status");
+    }
+  }
+
   async function handleReviewResubmitRequest(requestId, decision, reviewNote) {
     try {
       await reviewAdminResubmitRequest(requestId, { decision, reviewNote });
@@ -435,6 +445,7 @@ export default function AdminDashboard() {
           quizzes={quizzes}
           onUnlockAttempt={handleUnlockAttempt}
           onResetAttempt={handleResetAttempt}
+          onUpdateAttemptStatus={handleUpdateAttemptStatus}
           onReviewResubmitRequest={handleReviewResubmitRequest}
         />
       )}

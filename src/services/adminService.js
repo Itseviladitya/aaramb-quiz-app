@@ -110,3 +110,10 @@ export function unlockAttempt(attemptId) {
     method: "PATCH",
   });
 }
+
+export function updateAttemptStatus(attemptId, status, disqualifyReason = "") {
+  return apiRequest(`/admin/attempts/${attemptId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status, disqualifyReason }),
+  });
+}

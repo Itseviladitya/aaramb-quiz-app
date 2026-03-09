@@ -26,6 +26,7 @@ export default function AdminResultsTab({
   quizzes,
   onUnlockAttempt,
   onResetAttempt,
+  onUpdateAttemptStatus,
   onReviewResubmitRequest,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +39,8 @@ export default function AdminResultsTab({
   const [requestStatusFilter, setRequestStatusFilter] = useState("pending");
   const [reviewNotes, setReviewNotes] = useState({});
   const [workingRequestId, setWorkingRequestId] = useState("");
+  const [statusDraftByAttempt, setStatusDraftByAttempt] = useState({});
+  const [workingAttemptId, setWorkingAttemptId] = useState("");
 
   const filteredExportHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -93,6 +96,34 @@ export default function AdminResultsTab({
       setReviewNotes((current) => ({ ...current, [requestId]: "" }));
     } finally {
       setWorkingRequestId("");
+    }
+  }
+
+  async function handleStatusUpdate(row) {
+    const nextStatus = statusDraftByAttempt[row._id] || row.status;
+    if (nextStatus === row.status) {
+      return;
+    }
+
+    let disqualifyReason = "";
+    if (nextStatus === "disqualified") {
+      const promptValue = window.prompt("Enter disqualify reason", row.disqualifyReason || "");
+      if (promptValue === null) {
+        return;
+      }
+      disqualifyReason = String(promptValue || "").trim();
+    }
+
+    setWorkingAttemptId(row._id);
+    try {
+      await onUpdateAttemptStatus(row._id, nextStatus, disqualifyReason);
+      setStatusDraftByAttempt((current) => {
+        const next = { ...current };
+        delete next[row._id];
+        return next;
+      });
+    } finally {
+      setWorkingAttemptId("");
     }
   }
 
@@ -348,6 +379,33 @@ export default function AdminResultsTab({
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <select
+                        value={statusDraftByAttempt[row._id] || row.status}
+                        onChange={(event) =>
+                          setStatusDraftByAttempt((current) => ({
+                            ...current,
+                            [row._id]: event.target.value,
+                          }))
+                        }
+                        className="cursor-pointer rounded-lg border border-slate-600/50 bg-slate-900/60 px-2 py-1 text-xs text-slate-200"
+                        title="Change submission status"
+                      >
+                        <option value="in_progress">In Progress</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="expired">Expired</option>
+                        <option value="disqualified">Disqualified</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        title="Update submission status"
+                        disabled={workingAttemptId === row._id || (statusDraftByAttempt[row._id] || row.status) === row.status}
+                        onClick={() => handleStatusUpdate(row)}
+                        className="inline-flex items-center rounded-lg bg-cyan-500/10 px-2.5 py-1.5 text-xs font-semibold text-cyan-300 transition-colors hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Update
+                      </button>
+
                       {(row.status === "disqualified" || row.status === "in_progress" || row.isLocked) && (
                         <button
                           type="button"
